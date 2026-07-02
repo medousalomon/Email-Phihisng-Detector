@@ -723,6 +723,10 @@ if menu == "Admin Panel":
         use_container_width=True
     )
 
+    st.info(
+        f"Overall phishing percentage: {global_stats['phishing_percentage']:.1f}%"
+    )
+
     st.markdown("---")
     st.subheader("👥 User Management")
 
@@ -781,9 +785,7 @@ if menu == "Admin Panel":
                 "Please confirm before deleting the user."
             )
 
-    st.info(
-        f"Overall phishing percentage: {global_stats['phishing_percentage']:.1f}%"
-    )
+    
 
 
 if menu == "Admin Login":
