@@ -87,28 +87,9 @@ st.markdown(
 
 
 
-def complete_gmail_connection():
-
-    if "pending_gmail_code" in st.session_state:
-
-        credentials = get_credentials_from_code(
-            st.session_state.pending_gmail_code
-        )
-        st.session_state.gmail_credentials = credentials
-        st.session_state.logged_in = True
-        st.session_state.username = "gmail_user"
-        st.session_state.role = "user"
-        st.session_state.menu = "Gmail Scan"
-        del st.session_state.pending_gmail_code
-
-# Store Gmail OAuth code before login blocks the app
-query_params = st.query_params
-if "code" in query_params:
-    st.session_state.pending_gmail_code = query_params["code"]
-    st.query_params.clear()
-    complete_gmail_connection()
-    st.rerun()
-
+# -------------------------
+# SESSION DEFAULTS
+# -------------------------
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -118,6 +99,36 @@ if "username" not in st.session_state:
 
 if "role" not in st.session_state:
     st.session_state.role = "guest"
+
+
+def complete_gmail_connection(code):
+
+    credentials = get_credentials_from_code(code)
+
+    st.session_state.gmail_credentials = credentials
+    st.session_state.logged_in = True
+    st.session_state.username = "gmail_user"
+    st.session_state.role = "user"
+    st.session_state.menu = "Gmail Scan"
+
+
+# -------------------------
+# HANDLE GMAIL CALLBACK
+# -------------------------
+
+query_params = st.query_params
+
+if "code" in query_params:
+
+    code = query_params["code"]
+
+    complete_gmail_connection(code)
+
+    st.query_params.clear()
+
+    st.success("Gmail connected successfully.")
+
+    st.rerun()
 
 
 
