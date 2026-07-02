@@ -1,3 +1,4 @@
+import os
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
@@ -18,6 +19,11 @@ def generate_pdf_report(
     output_path="exports/report.pdf"
 
 ):
+
+    os.makedirs(
+        os.path.dirname(output_path),
+        exist_ok=True
+    )
 
     doc = SimpleDocTemplate(
 
