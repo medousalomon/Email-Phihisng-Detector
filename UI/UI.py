@@ -160,6 +160,27 @@ if not st.session_state.logged_in:
 
 
 # -------------------------
+# HANDLE GMAIL OAUTH CALLBACK
+# -------------------------
+
+query_params = st.query_params
+
+if st.session_state.logged_in and "code" in query_params:
+
+    code = query_params["code"]
+
+    credentials = get_credentials_from_code(code)
+
+    st.session_state.gmail_credentials = credentials
+    st.session_state.menu = "Gmail Scan"
+
+    st.query_params.clear()
+
+    st.success("Gmail connected successfully.")
+    st.rerun()
+
+
+# -------------------------
 # SIDEBAR NAVIGATION
 # -------------------------
 
@@ -601,32 +622,16 @@ if menu == "Gmail Scan":
 
     st.header("📬 Gmail Inbox Scanner")
 
-    query_params = st.query_params
-
     if "gmail_credentials" not in st.session_state:
 
-        if "code" in query_params:
+        auth_url = get_gmail_auth_url()
 
-            code = query_params["code"]
+        st.link_button(
+            "Connect Gmail Account",
+            auth_url
+        )
 
-            credentials = get_credentials_from_code(
-                code
-            )
-
-            st.session_state.gmail_credentials = credentials
-
-            st.success("Gmail connected successfully.")
-
-        else:
-
-            auth_url = get_gmail_auth_url()
-
-            st.link_button(
-                "Connect Gmail Account",
-                auth_url
-            )
-
-            st.stop()
+        st.stop()
 
     max_emails = st.slider(
         "Number of recent emails to scan",
