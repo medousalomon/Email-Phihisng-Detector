@@ -118,17 +118,38 @@ def complete_gmail_connection(code):
 
 query_params = st.query_params
 
+query_params = st.query_params
+
 if "code" in query_params:
+
+    st.write("OAuth code received")
 
     code = query_params["code"]
 
-    complete_gmail_connection(code)
+    try:
 
-    st.query_params.clear()
+        credentials = get_credentials_from_code(code)
 
-    st.success("Gmail connected successfully.")
+        st.write("Credentials generated")
 
-    st.rerun()
+        st.session_state.gmail_credentials = credentials
+
+        st.session_state.logged_in = True
+        st.session_state.username = "gmail_user"
+        st.session_state.role = "user"
+        st.session_state.menu = "Gmail Scan"
+
+        st.write("Session updated")
+
+        st.query_params.clear()
+
+        st.success("Gmail connected successfully.")
+
+        st.rerun()
+
+    except Exception as e:
+
+        st.error(f"Gmail OAuth error: {e}")
 
 
 
