@@ -93,7 +93,8 @@ if "logged_in" not in st.session_state:
 query_params = st.query_params
 
 if "code" in query_params and "pending_gmail_code" not in st.session_state:
-    st.session_state
+    st.session_state.pending_gmail_code = query_params["code"]
+    st.query_params.clear()
 
 
 def complete_gmail_connection():
