@@ -1,0 +1,13 @@
+*.pyc
+*.db
+.env
+.streamlit/
+exports/
+
+data/processed/cleaned_data.csv
+data/raw/raw_data.csv
+data/processed/features.npy
+data/processed/labels.npy
+data/processed/*csv
+data/raw/*csv
+data/processed/*npy
