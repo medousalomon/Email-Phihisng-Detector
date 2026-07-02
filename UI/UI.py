@@ -84,17 +84,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-if "logged_in" not in st.session_state:
 
-    st.session_state.logged_in = False
-
-
-# Store Gmail OAuth code before login blocks the app
-query_params = st.query_params
-
-if "code" in query_params and "pending_gmail_code" not in st.session_state:
-    st.session_state.pending_gmail_code = query_params["code"]
-    st.query_params.clear()
 
 
 def complete_gmail_connection():
@@ -104,83 +94,30 @@ def complete_gmail_connection():
         credentials = get_credentials_from_code(
             st.session_state.pending_gmail_code
         )
-
         st.session_state.gmail_credentials = credentials
+        st.session_state.logged_in = True
+        st.session_state.username = "gmail_user"
+        st.session_state.role = "user"
         st.session_state.menu = "Gmail Scan"
-
         del st.session_state.pending_gmail_code
 
+# Store Gmail OAuth code before login blocks the app
+query_params = st.query_params
+if "code" in query_params:
+    st.session_state.pending_gmail_code = query_params["code"]
+    st.query_params.clear()
+    complete_gmail_connection()
+    st.rerun()
 
-# -------------------------
-# AUTHENTICATION
-# -------------------------
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "username" not in st.session_state:
+    st.session_state.username = "guest"
+
 if "role" not in st.session_state:
-    st.session_state.role = "user"
-
-if not st.session_state.logged_in:
-
-    auth_mode = st.sidebar.selectbox(
-
-        "Authentication",
-
-        [
-            "Login",
-            "Register"
-        ]
-    )
-
-    username = st.sidebar.text_input(
-        "Username"
-    )
-
-    password = st.sidebar.text_input(
-        "Password",
-        type="password"
-    )
-
-    if auth_mode == "Register":
-
-        if st.sidebar.button("Register"):
-
-            success = register_user(
-                username,
-                password
-            )
-
-            if success:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.session_state.role = get_user_role(username)
-                activate_session(username)
-                st.rerun()
-
-            else:
-
-                st.sidebar.error("Username already exists.")
-
-    else:
-
-        if st.sidebar.button("Login"):
-
-            authenticated = login_user(
-                username,
-                password
-            )
-
-            if authenticated:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.session_state.role = get_user_role(username)
-                activate_session(username)
-                complete_gmail_connection()
-                st.rerun()
-
-            else:
-
-                st.sidebar.error("Invalid credentials.")
-
-    
-    st.stop()
+    st.session_state.role = "guest"
 
 
 
@@ -216,6 +153,61 @@ st.sidebar.markdown("---")
 if st.sidebar.button("👤 Account", use_container_width=True):
     st.session_state.menu = "Account"
 
+st.sidebar.markdown("## 👤 Account")
+
+if not st.session_state.logged_in:
+
+    auth_mode = st.sidebar.selectbox(
+        "Account Option",
+        ["Continue as Guest", "Login", "Register"]
+    )
+
+    if auth_mode in ["Login", "Register"]:
+
+        username = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
+
+        if auth_mode == "Register":
+
+            if st.sidebar.button("Register"):
+
+                success = register_user(username, password)
+
+                if success:
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+                    st.session_state.role = get_user_role(username)
+                    activate_session(username)
+                    st.rerun()
+                else:
+                    st.sidebar.error("Username already exists.")
+
+        if auth_mode == "Login":
+
+            if st.sidebar.button("Login"):
+
+                authenticated = login_user(username, password)
+
+                if authenticated:
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+                    st.session_state.role = get_user_role(username)
+                    activate_session(username)
+                    st.rerun()
+                else:
+                    st.sidebar.error("Invalid credentials.")
+
+else:
+
+    st.sidebar.write(f"Logged in as: **{st.session_state.username}**")
+
+    if st.sidebar.button("Logout"):
+        deactivate_session(st.session_state.username)
+        st.session_state.logged_in = False
+        st.session_state.username = "guest"
+        st.session_state.role = "guest"
+        st.rerun()
+
 if st.session_state.role != "admin":
     if st.sidebar.button("🛡️ Login as Admin", use_container_width=True):
         st.session_state.menu = "Admin Login"
@@ -234,15 +226,6 @@ st.sidebar.info(
     "Deep Learning + LIME Explainability"
 )
 
-st.sidebar.markdown("---")
-st.sidebar.write(f"👤 Logged in as: **{st.session_state.username}**")
-
-if st.sidebar.button("Logout"):
-    deactivate_session(st.session_state.username)
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = "user"
-    st.rerun()
 
 
 st.info("Use the sidebar on the left to navigate through the application.")
@@ -922,6 +905,10 @@ if menu == "Admin Login":
 
 if menu == "Account":
 
+    if not st.session_state.logged_in:
+        st.warning("Please login or register to access account settings.")
+        st.stop()
+
     st.header("👤 My Account")
 
     st.write(f"**Username:** {st.session_state.username}")
@@ -1025,7 +1012,8 @@ if menu == "Account":
             st.success("Account deleted successfully.")
 
             st.session_state.logged_in = False
-            st.session_state.username = ""
+            st.session_state.username = "guest"
+            st.session_state.role = "guest"
 
             st.rerun()
 
