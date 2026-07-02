@@ -61,6 +61,11 @@ from services.explainer import (
     explain_email,
     generate_highlighted_html
 )
+from services.gmail_service import (
+    get_gmail_auth_url,
+    get_credentials_from_code,
+    fetch_recent_emails
+)
 
 
 
@@ -174,6 +179,9 @@ if st.sidebar.button("📧 Scan Email", use_container_width=True):
 
 if st.sidebar.button("📂 Batch Scan", use_container_width=True):
     st.session_state.menu = "Batch Scan"
+
+if st.sidebar.button("📬 Gmail Scan", use_container_width=True):
+    st.session_state.menu = "Gmail Scan"
 
 if st.sidebar.button("📜 Scan History", use_container_width=True):
     st.session_state.menu = "Scan History"
@@ -586,7 +594,89 @@ if menu == "Batch Scan":
                 file_name="batch_scan_results.csv",
 
                 mime="text/csv"
-            )       
+            ) 
+
+
+if menu == "Gmail Scan":
+
+    st.header("📬 Gmail Inbox Scanner")
+
+    query_params = st.query_params
+
+    if "gmail_credentials" not in st.session_state:
+
+        if "code" in query_params:
+
+            code = query_params["code"]
+
+            credentials = get_credentials_from_code(
+                code
+            )
+
+            st.session_state.gmail_credentials = credentials
+
+            st.success("Gmail connected successfully.")
+
+        else:
+
+            auth_url = get_gmail_auth_url()
+
+            st.link_button(
+                "Connect Gmail Account",
+                auth_url
+            )
+
+            st.stop()
+
+    max_emails = st.slider(
+        "Number of recent emails to scan",
+        1,
+        10,
+        5
+    )
+
+    if st.button("Scan Gmail Inbox"):
+
+        emails = fetch_recent_emails(
+            st.session_state.gmail_credentials,
+            max_results=max_emails
+        )
+
+        for email in emails:
+
+            full_text = f"""
+            From: {email['sender']}
+            Subject: {email['subject']}
+
+            {email['body']}
+            """
+
+            label, confidence = predict_email(
+                full_text
+            )
+
+            save_scan(
+                st.session_state.username,
+                full_text,
+                label,
+                confidence
+            )
+
+            if label == "PHISHING":
+
+                st.error(
+                    f"⚠️ {label} ({confidence:.4f})"
+                )
+
+            else:
+
+                st.success(
+                    f"✅ {label} ({confidence:.4f})"
+                )
+
+            st.write(f"**From:** {email['sender']}")
+            st.write(f"**Subject:** {email['subject']}")
+            st.markdown("---")      
 
 
 if menu == "Scan History":
