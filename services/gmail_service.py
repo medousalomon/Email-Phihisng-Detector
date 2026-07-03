@@ -40,12 +40,14 @@ def get_gmail_auth_url():
         prompt="consent"
     )
 
+    st.session_state.gmail_flow = flow
+
     return auth_url
 
 
 def get_credentials_from_code(code):
 
-    flow = get_gmail_flow()
+    flow = st.session_state.gmail_flow
 
     flow.fetch_token(
         code=code
