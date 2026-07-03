@@ -698,6 +698,8 @@ if menu == "Gmail Scan":
 
             st.write(f"**From:** {email['sender']}")
             st.write(f"**Subject:** {email['subject']}")
+            with st.expander("View Full Email Body"):
+                st.text(email["body"][:10000])
             st.markdown("---")      
 
 
