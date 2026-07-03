@@ -24,7 +24,8 @@ def get_gmail_flow():
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
-        redirect_uri=st.secrets["GMAIL_REDIRECT_URI"]
+        redirect_uri=st.secrets["GMAIL_REDIRECT_URI"],
+        autogenerate_code_verifier=False
     )
 
     return flow
@@ -40,16 +41,12 @@ def get_gmail_auth_url():
         prompt="consent"
     )
 
-    st.session_state.code_verifier = flow.code_verifier
-
     return auth_url
 
 
 def get_credentials_from_code(code):
 
     flow = get_gmail_flow()
-
-    flow.code_verifier = st.session_state.code_verifier
 
     flow.fetch_token(
         code=code
