@@ -70,36 +70,41 @@ def get_credentials_from_code(code):
 
 def extract_email_body(payload):
 
-    body = ""
+    bodies = []
 
-    def walk_parts(part):
+    def decode_body(data):
 
-        nonlocal body
+        if not data:
+            return ""
+
+        return base64.urlsafe_b64decode(
+            data
+        ).decode(
+            "utf-8",
+            errors="ignore"
+        )
+
+    def walk(part):
 
         mime_type = part.get("mimeType", "")
+        body_data = part.get("body", {}).get("data")
 
-        data = part.get("body", {}).get("data")
+        if body_data:
 
-        if data and mime_type in ["text/plain", "text/html"]:
-
-            decoded = base64.urlsafe_b64decode(
-                data
-            ).decode(
-                "utf-8",
-                errors="ignore"
-            )
+            decoded = decode_body(body_data)
 
             if mime_type == "text/html":
                 decoded = clean_html(decoded)
 
-            body += decoded + "\n"
+            if mime_type in ["text/plain", "text/html"]:
+                bodies.append(decoded)
 
         for sub_part in part.get("parts", []):
-            walk_parts(sub_part)
+            walk(sub_part)
 
-    walk_parts(payload)
+    walk(payload)
 
-    return body
+    return "\n\n".join(bodies)
 
 
 def fetch_recent_emails(credentials, max_results=5):
