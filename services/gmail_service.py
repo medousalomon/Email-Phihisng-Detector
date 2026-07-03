@@ -1,3 +1,4 @@
+import re
 import base64
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -5,6 +6,18 @@ import streamlit as st
 
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+
+
+def clean_html(raw_html):
+
+    text = re.sub(r"<[^>]+>", " ", raw_html)
+    text = re.sub(r"&nbsp;", " ", text)
+    text = re.sub(r"&amp;", "&", text)
+    text = re.sub(r"&lt;", "<", text)
+    text = re.sub(r"&gt;", ">", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text
 
 
 def get_gmail_flow():
@@ -59,35 +72,32 @@ def extract_email_body(payload):
 
     body = ""
 
-    if "parts" in payload:
+    def walk_parts(part):
 
-        for part in payload["parts"]:
+        nonlocal body
 
-            if part.get("mimeType") == "text/plain":
+        mime_type = part.get("mimeType", "")
 
-                data = part["body"].get("data")
+        data = part.get("body", {}).get("data")
 
-                if data:
+        if data and mime_type in ["text/plain", "text/html"]:
 
-                    body += base64.urlsafe_b64decode(
-                        data
-                    ).decode(
-                        "utf-8",
-                        errors="ignore"
-                    )
-
-    else:
-
-        data = payload.get("body", {}).get("data")
-
-        if data:
-
-            body = base64.urlsafe_b64decode(
+            decoded = base64.urlsafe_b64decode(
                 data
             ).decode(
                 "utf-8",
                 errors="ignore"
             )
+
+            if mime_type == "text/html":
+                decoded = clean_html(decoded)
+
+            body += decoded + "\n"
+
+        for sub_part in part.get("parts", []):
+            walk_parts(sub_part)
+
+    walk_parts(payload)
 
     return body
 
